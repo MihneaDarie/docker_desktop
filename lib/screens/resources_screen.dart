@@ -1,3 +1,4 @@
+import 'package:docker_desktop/screens/common/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:docker_desktop/data/docker_service_client.dart';
 import 'package:docker_desktop/models/container_spec.dart';
@@ -163,33 +164,20 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _sectionHeader(
+        sectionHeader(
             'Containers', '${_containers!.length} total', Icons.inventory_2),
         const SizedBox(height: 8),
         if (_containers!.isEmpty)
-          const _EmptyCard(text: 'No containers yet')
+          const EmptyCard(text: 'No containers yet')
         else
           ..._containers!.map((c) => _containerCard(c)),
         const SizedBox(height: 24),
-        _sectionHeader('Images', '${_images!.length} pulled', Icons.layers),
+        sectionHeader('Images', '${_images!.length} pulled', Icons.layers),
         const SizedBox(height: 8),
         if (_images!.isEmpty)
-          const _EmptyCard(text: 'No images pulled')
+          const EmptyCard(text: 'No images pulled')
         else
           ..._images!.map((i) => _imageCard(i)),
-      ],
-    );
-  }
-
-  Widget _sectionHeader(String title, String subtitle, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 20),
-        const SizedBox(width: 8),
-        Text(title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(width: 12),
-        Text(subtitle, style: TextStyle(color: Colors.grey[600])),
       ],
     );
   }
@@ -202,7 +190,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            _StateBadge(state: c.state),
+            StateBadge(state: c.state),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -283,53 +271,6 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
           icon: const Icon(Icons.plus_one),
           label: const Text('Create container'),
           onPressed: () => _createFromImage(i.tag),
-        ),
-      ),
-    );
-  }
-}
-
-class _StateBadge extends StatelessWidget {
-  final ContainerState state;
-  const _StateBadge({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (state) {
-      ContainerState.running => ('RUN', Colors.green),
-      ContainerState.stopped => ('OFF', Colors.grey),
-      ContainerState.paused => ('PAU', Colors.orange),
-      ContainerState.restarting => ('RST', Colors.blue),
-      ContainerState.unknown => ('???', Colors.red),
-    };
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style:
-            TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 11),
-      ),
-    );
-  }
-}
-
-class _EmptyCard extends StatelessWidget {
-  final String text;
-  const _EmptyCard({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(text, style: TextStyle(color: Colors.grey[600])),
         ),
       ),
     );

@@ -52,6 +52,28 @@ class ClientDockerService implements DockerService {
     }).toList();
   }
 
+  Future<List<ContainerSpec>> listRunningContainers() async {
+    final rows = await _runargs(['ps', '--format', '{{json .}}']);
+    return rows.map((r) {
+      const state = ContainerState.running;
+
+      return ContainerSpec(
+        id: r['ID'] as String,
+        name: r['Names'] as String,
+        image: r['Image'] as String,
+        state: state,
+        statusText: r['Status'] as String,
+        created: DateTime.tryParse(r['CreatedAt'] as String? ?? '') ??
+            DateTime.now(),
+        ports: ((r['Ports'] as String?) ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList(),
+      );
+    }).toList();
+  }
+
   @override
   Future<List<ImageSpec>> listImages() async {
     final rows = await _runargs(['images', '--format', '{{json .}}']);
