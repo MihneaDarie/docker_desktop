@@ -33,7 +33,7 @@ class EmptyCard extends StatelessWidget {
 
 class StateBadge extends StatelessWidget {
   final ContainerState state;
-  const StateBadge({required this.state});
+  const StateBadge({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,6 @@ class StateBadge extends StatelessWidget {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,

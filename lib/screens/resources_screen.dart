@@ -1,3 +1,4 @@
+import 'package:docker_desktop/screens/common/container_card.dart';
 import 'package:docker_desktop/screens/common/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:docker_desktop/data/docker_service_client.dart';
@@ -170,7 +171,27 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         if (_containers!.isEmpty)
           const EmptyCard(text: 'No containers yet')
         else
-          ..._containers!.map((c) => _containerCard(c)),
+          ..._containers!.map((c) => ContainerCard(
+                container: c,
+                svc: widget.svc,
+                busy: _busy.contains(c.id),
+                onStart: () => _runAction(
+                  id: c.id,
+                  verb: 'start',
+                  action: () => widget.svc.startContainer(c.id),
+                ),
+                onStop: () => _runAction(
+                  id: c.id,
+                  verb: 'stop',
+                  action: () => widget.svc.stopContainer(c.id),
+                ),
+                onRestart: () => _runAction(
+                  id: c.id,
+                  verb: 'restart',
+                  action: () => widget.svc.restartContainer(c.id),
+                ),
+                onRemove: () => _confirmRemove(c),
+              )),
         const SizedBox(height: 24),
         sectionHeader('Images', '${_images!.length} pulled', Icons.layers),
         const SizedBox(height: 8),
@@ -179,83 +200,6 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         else
           ..._images!.map((i) => _imageCard(i)),
       ],
-    );
-  }
-
-  Widget _containerCard(ContainerSpec c) {
-    final busy = _busy.contains(c.id);
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            StateBadge(state: c.state),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(c.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 15)),
-                  const SizedBox(height: 2),
-                  Text(c.image,
-                      style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                  Text('${c.shortId} · ${c.statusText}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                ],
-              ),
-            ),
-            if (busy)
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 5),
-              )
-            else
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!c.isRunning)
-                    IconButton(
-                      icon: const Icon(Icons.play_arrow),
-                      tooltip: 'Start',
-                      onPressed: () => _runAction(
-                        id: c.id,
-                        verb: 'start',
-                        action: () => widget.svc.startContainer(c.id),
-                      ),
-                    ),
-                  if (c.isRunning)
-                    IconButton(
-                      icon: const Icon(Icons.stop),
-                      tooltip: 'Stop',
-                      onPressed: () => _runAction(
-                        id: c.id,
-                        verb: 'stop',
-                        action: () => widget.svc.stopContainer(c.id),
-                      ),
-                    ),
-                  IconButton(
-                    icon: const Icon(Icons.restart_alt),
-                    tooltip: 'Restart',
-                    onPressed: () => _runAction(
-                      id: c.id,
-                      verb: 'restart',
-                      action: () => widget.svc.restartContainer(c.id),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: 'Remove',
-                    onPressed: () => _confirmRemove(c),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
     );
   }
 

@@ -138,26 +138,37 @@ class ClientDockerService implements DockerService {
 
   @override
   Stream<StatsSpec> streamStats(String id) async* {
-    final proc =
-        await Process.start('docker', ['stats', '--format', '{{json .}}', id]);
-    _processes.add(proc);
-    await for (final line in proc.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())) {
-      if (line.trim().isEmpty) continue;
+    while (true) {
       try {
-        final r = jsonDecode(line) as Map<String, dynamic>;
-        final mem = _parseMemUsage(r['MemUsage'] as String? ?? '0B / 0B');
-        yield StatsSpec(
-          containerId: id,
-          cpuPercent: _parsePercent(r['CPUPerc'] as String? ?? '0%'),
-          memoryBytes: mem.$1,
-          memoryLimitBytes: mem.$2,
-          networkRxBytes: 0,
-          networkTxBytes: 0,
+        final result = await Process.run(
+          'docker',
+          ['stats', '--no-stream', '--format', '{{json .}}', id],
         );
+        if (result.exitCode != 0) {
+          return;
+        }
+        final line = (result.stdout as String).trim();
+        if (line.isEmpty) {
+          await Future.delayed(const Duration(seconds: 1));
+          continue;
+        }
+        final json = jsonDecode(line) as Map<String, dynamic>;
+        yield _parseStatsJson(id, json);
       } catch (_) {}
+      await Future.delayed(const Duration(seconds: 1));
     }
+  }
+
+  StatsSpec _parseStatsJson(String id, Map<String, dynamic> r) {
+    return StatsSpec(
+      containerId: id,
+      cpuPercent: _parsePercent(r['CPUPerc'] as String? ?? '0%'),
+      memoryBytes: _parseMemUsage(r['MemUsage'] as String? ?? '0B / 0B').$1,
+      memoryLimitBytes:
+          _parseMemUsage(r['MemUsage'] as String? ?? '0B / 0B').$2,
+      networkRxBytes: 0,
+      networkTxBytes: 0,
+    );
   }
 
   @override
