@@ -137,6 +137,17 @@ class ClientDockerService implements DockerService {
   }
 
   @override
+  Future<String> execCommand(String id, List<String> cmd) async {
+    final r = await Process.run(
+      'docker',
+      ['exec', id, ...cmd],
+      stdoutEncoding: utf8,
+      stderrEncoding: utf8,
+    );
+    return '${r.stdout}${r.stderr}';
+  }
+
+  @override
   Stream<StatsSpec> streamStats(String id) async* {
     while (true) {
       try {

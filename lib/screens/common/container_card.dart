@@ -33,18 +33,35 @@ class ContainerCard extends StatefulWidget {
 class _ContainerCardState extends State<ContainerCard> {
   bool _logsOpen = false;
   bool _statsOpen = false;
+  bool _execOpne = false;
 
   void _toggleLogs() {
     setState(() {
       _logsOpen = !_logsOpen;
-      if (_logsOpen) _statsOpen = false;
+      if (_logsOpen) {
+        _statsOpen = false;
+        _execOpne = false;
+      }
+    });
+  }
+
+  void _toggleExec() {
+    setState(() {
+      _execOpne = !_execOpne;
+      if (_execOpne) {
+        _statsOpen = false;
+        _logsOpen = false;
+      }
     });
   }
 
   void _toggleStats() {
     setState(() {
       _statsOpen = !_statsOpen;
-      if (_statsOpen) _logsOpen = false;
+      if (_statsOpen) {
+        _logsOpen = false;
+        _execOpne = false;
+      }
     });
   }
 
@@ -125,6 +142,15 @@ class _ContainerCardState extends State<ContainerCard> {
                         onPressed: _toggleStats,
                       ),
                       IconButton(
+                        icon: Icon(_execOpne
+                            ? Icons.terminal
+                            : Icons.terminal_outlined),
+                        tooltip: _execOpne
+                            ? 'Hide execution terminal'
+                            : 'Open execution terminal',
+                        onPressed: _toggleExec,
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.delete_outline),
                         tooltip: 'Remove',
                         color: Colors.red,
@@ -141,14 +167,117 @@ class _ContainerCardState extends State<ContainerCard> {
             alignment: Alignment.topCenter,
             child: SizedBox(
               width: double.infinity,
-              height: (_logsOpen || _statsOpen) ? 400 : 0,
+              height: _execOpne
+                  ? 200
+                  : (_logsOpen || _statsOpen)
+                      ? 400
+                      : 0,
               child: _logsOpen
                   ? _LogsPanel(svc: widget.svc, containerId: c.id)
                   : _statsOpen
                       ? _StatsPanel(svc: widget.svc, containerId: c.id)
-                      : const SizedBox.shrink(),
+                      : _execOpne
+                          ? _ExecPanel(svc: widget.svc, containerId: c.id)
+                          : const SizedBox.shrink(),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExecPanel extends StatefulWidget {
+  final ClientDockerService svc;
+  final String containerId;
+
+  const _ExecPanel({required this.svc, required this.containerId});
+
+  @override
+  State<StatefulWidget> createState() => _ExecPanelState();
+}
+
+class _ExecPanelState extends State<_ExecPanel> {
+  String _result = '';
+  final TextEditingController _textBox = TextEditingController();
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _textBox.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run() async {
+    final cmd = _textBox.text.trim();
+    if (cmd.isEmpty || _busy) return;
+
+    setState(() {
+      _busy = true;
+      _result = '';
+    });
+
+    try {
+      final parts = cmd.split(RegExp(r'\s+'));
+      final out = await widget.svc.execCommand(widget.containerId, parts);
+      if (!mounted) return;
+      setState(() {
+        _result = out;
+        _busy = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _result = 'Error: $e';
+        _busy = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: TextField(
+                controller: _textBox,
+                style: const TextStyle(color: Colors.white),
+                enabled: !_busy,
+                onSubmitted: (_) => _run(),
+              )),
+              FilledButton(
+                  onPressed: _busy ? null : _run,
+                  child: _busy
+                      ? const SizedBox(
+                          width: 10,
+                          height: 10,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 5,
+                          ),
+                        )
+                      : const Text('Run')),
+            ],
+          ),
+          const SizedBox(
+            width: 15,
+          ),
+          Expanded(
+              child: Container(
+            padding: const EdgeInsets.all(8),
+            child: SingleChildScrollView(
+              child: SelectableText(
+                _result,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ))
         ],
       ),
     );

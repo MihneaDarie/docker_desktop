@@ -11,6 +11,8 @@ abstract class DockerService {
   Future<void> restartContainer(String id);
   Future<void> removeContainer(String id, {bool force = false});
 
+  Future<String> execCommand(String id, List<String> cmd);
+
   Future<String> createContainer({
     required String image,
     String? name,
