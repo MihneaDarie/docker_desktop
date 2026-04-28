@@ -167,9 +167,9 @@ class _ContainerCardState extends State<ContainerCard> {
             alignment: Alignment.topCenter,
             child: SizedBox(
               width: double.infinity,
-              height: _execOpne
+              height: (_execOpne || _statsOpen)
                   ? 200
-                  : (_logsOpen || _statsOpen)
+                  : _logsOpen
                       ? 400
                       : 0,
               child: _logsOpen
